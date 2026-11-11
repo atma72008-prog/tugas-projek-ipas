@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI THERMAL LAB</title>
+<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@500;800&family=Permanent+Marker&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>tailwind.config={darkMode:'class',theme:{extend:{colors:{'street-pink':'#ff007f','street-cyan':'#00f0ff','street-lime':'#39ff14','street-yellow':'#ffe600'},fontFamily:{bangers:['Bangers','cursive'],marker:['Permanent Marker','cursive'],mono:['JetBrains Mono','monospace']}}}}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<style>
+:root{--bg:#0d0b1a;--fg:#f4f4f8;--card:#1a1633}
+body.light{--bg:#fff7e0;--fg:#161226;--card:#fff}
+body{background:var(--bg);color:var(--fg);font-family:Inter,sans-serif}
+h1,h2,h3{font-family:Bangers,cursive;letter-spacing:.05em}
+.card{background:var(--card);border:3px solid #000;box-shadow:5px 5px 0 #ff007f;padding:12px}
+.card.c{box-shadow:5px 5px 0 #00f0ff}.card.l{box-shadow:5px 5px 0 #39ff14}.card.y{box-shadow:5px 5px 0 #ffe600}
+.btn{border:3px solid #000;box-shadow:3px 3px 0 #000;padding:5px 12px;font-family:'Permanent Marker',cursive;background:#ffe600;color:#000;transform:rotate(-1.5deg);cursor:pointer;margin:2px}
+.btn:nth-child(even){transform:rotate(1.5deg)}.btn:hover{background:#ff007f;color:#fff}.btn.on{background:#00f0ff}
+.btn:focus-visible,input:focus-visible{outline:3px solid #ff007f;outline-offset:2px}
+.num{font-family:'JetBrains Mono',monospace;font-weight:800}
+.tab{display:none}.tab.act{display:block}
+.neon{text-shadow:0 0 8px #ff007f,0 0 20px #ff007f}
+#view{position:relative;height:420px;border:3px solid #000;overflow:hidden}
+#view canvas{display:block}
+#lab{position:absolute;inset:0;pointer-events:none}
+#lab div{position:absolute;width:120px;font:700 11px 'JetBrains Mono';background:#000;color:#39ff14;padding:2px 4px;border:1px solid #39ff14}
+#lab svg{position:absolute;inset:0;width:100%;height:100%}
+#ov{position:fixed;inset:0;background:rgba(255,0,40,.28);display:none;align-items:center;justify-content:center;pointer-events:none;z-index:50;font-family:Bangers;font-size:3rem;color:#fff;text-shadow:3px 3px #000}
+input[type=range]{width:100%;accent-color:#ff007f}
+.opt{display:block;padding:4px 8px;border:2px solid #000;margin:3px 0;cursor:pointer}
+@media(prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#070b14;--fg:#e6edf7;--card:rgba(16,24,42,.72)}
+body.light{--bg:#eef3fb;--fg:#0f172a;--card:rgba(255,255,255,.88)}
+body{background:radial-gradient(1100px 600px at 85% -10%,rgba(139,92,246,.2),transparent),radial-gradient(900px 500px at 0 0,rgba(34,211,238,.15),transparent),var(--bg)}
+body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background-image:linear-gradient(rgba(120,160,220,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(120,160,220,.07) 1px,transparent 1px);background-size:44px 44px}
+h1,h2,h3{font-family:'Space Grotesk',sans-serif;letter-spacing:-.01em;font-weight:700}
+.card,.card.c,.card.l,.card.y{border:1px solid rgba(120,170,255,.22);border-radius:16px;box-shadow:0 8px 30px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.05);backdrop-filter:blur(10px)}
+.card{border-top:2px solid #8b5cf6}.card.c{border-top:2px solid #22d3ee}.card.l{border-top:2px solid #34d399}.card.y{border-top:2px solid #fbbf24}
+.btn{transform:none!important;border:1px solid rgba(120,170,255,.35);box-shadow:none;border-radius:999px;font-family:Inter,sans-serif;font-weight:600;font-size:13px;background:rgba(30,41,70,.7);color:var(--fg);padding:6px 14px}
+body.light .btn{background:#fff}
+.btn:hover{background:#22d3ee;color:#001018}.btn.on{background:linear-gradient(90deg,#22d3ee,#8b5cf6);color:#fff;border-color:transparent}
+#view{border-radius:16px;border:1px solid rgba(120,170,255,.3);box-shadow:0 0 40px rgba(34,211,238,.18)}
+#lab div{border-radius:6px;background:rgba(7,11,20,.88);color:#67e8f9;border:1px solid #22d3ee}
+.neon{text-shadow:0 0 18px rgba(34,211,238,.55)}
+.opt{border:1px solid rgba(120,170,255,.3);border-radius:10px}
+#ov{font-family:'Space Grotesk',sans-serif}
+</style></head>
+<body class="min-h-screen">
+<div id="ov"><span>⚠️ OVERHEAT! ⚠️</span></div>
+<header class="p-3 flex flex-wrap items-center justify-between gap-2">
+ <h1 class="text-3xl md:text-4xl neon">AI Thermal Lab <span class="text-sm font-normal opacity-70 ml-2">Simulator Pendinginan Chip AI</span></h1>
+ <button class="btn" id="theme">☀️ Mode Terang</button>
+</header>
+<nav class="px-3 flex flex-wrap" id="nav">
+ <button class="btn on" data-t="sim">SIMULASI</button><button class="btn" data-t="edu">RUMUS & CARA HITUNG</button><button class="btn" data-t="mis">TANTANGAN MISI</button><button class="btn" data-t="quiz">KUIS EVALUASI</button>
+</nav>
+<main class="p-3 max-w-7xl mx-auto">
+
+<section id="sim" class="tab act">
+ <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+  <div class="card"><div class="text-xs">Suhu Chip AI</div><div class="num text-3xl" id="mT">--</div></div>
+  <div class="card c"><div class="text-xs">Faktor Pendingin (F)</div><div class="num text-3xl" id="mF">--</div></div>
+  <div class="card y"><div class="text-xs">Tambahan Panas Chip</div><div class="num text-3xl" id="mA">--</div></div>
+  <div class="card l"><div class="text-xs">Status Chip AI</div><div class="font-marker text-xl" id="mS">--</div></div>
+ </div>
+ <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+ <div class="card"><div class="text-xs">Performa Chip</div><div class="num text-2xl" id="mP">--</div></div>
+ <div class="card c"><div class="text-xs">PUE Pendingin</div><div class="num text-2xl" id="mU">--</div></div>
+ <div class="card y"><div class="text-xs">Daya Total</div><div class="num text-2xl" id="mD">--</div></div>
+ <div class="card l"><div class="text-xs">Biaya Listrik / Bulan</div><div class="num text-2xl" id="mC">--</div></div>
+</div>
+<div class="card mb-4"><h3 class="text-xl mb-2">Perbandingan Live 3 Pendingin</h3><div id="cmp" class="num text-sm"></div></div>
+<div class="grid lg:grid-cols-3 gap-4">
+  <div class="lg:col-span-2">
+   <div class="mb-2">
+    <button class="btn on" id="b3d">3D Orbit</button><button class="btn" id="b2d">2D Skematik</button>
+    <button class="btn" id="pOrb">Orbit 360°</button><button class="btn" id="pTop">Atas (Die)</button><button class="btn" id="pBot">Bawah (BGA)</button><button class="btn" id="pExp">Eksplosi Instan</button><button class="btn" id="zIn">Zoom +</button><button class="btn" id="zOut">Zoom −</button><button class="btn on" id="pLab">Label ON</button>
+   </div>
+   <div id="view"><div id="lab"><svg id="svg"></svg></div><canvas id="c2d" style="display:none;position:absolute;inset:0"></canvas></div>
+   <div class="card mt-3"><label class="font-marker">Exploded View: <span class="num" id="exV">0</span>%</label><input type="range" id="ex" min="0" max="100" value="0"></div>
+   <div class="card c mt-3"><h3 class="text-xl">Grafik Suhu Realtime <span class="text-xs font-sans">(garis merah = throttling 85°C)</span></h3><canvas id="gr" width="700" height="140" class="w-full"></canvas></div>
+  </div>
+  <div class="space-y-3">
+   <div class="card y"><h3 class="text-xl mb-1">Panel Kontrol Thermal</h3>
+    <div id="modes"><button class="btn on" data-m="air">Udara F=0.15</button><button class="btn" data-m="dlc">Liquid DLC F=0.05</button><button class="btn" data-m="imm">Rendam F=0.02</button></div>
+    <div class="mt-2 text-xs opacity-70">Preset Beban</div><div><button class="btn" data-p="300,25,100">Idle</button><button class="btn" data-p="600,25,80">Inference</button><button class="btn" data-p="800,30,100">Training</button><button class="btn" data-p="1000,35,100">Overclock</button><button class="btn" id="auto">⚡ Auto-pilih pendingin</button></div>
+    <label class="block mt-2 text-sm">Watt Chip (TDP): <span class="num" id="wV"></span> W</label><input type="range" id="watt" min="300" max="1000" step="10" value="600">
+    <label class="block mt-2 text-sm">Suhu Air/Ruang: <span class="num" id="aV"></span> °C</label><input type="range" id="amb" min="18" max="35" value="25">
+    <label class="block mt-2 text-sm">Kecepatan Pompa/Kipas: <span class="num" id="sV"></span>%</label><input type="range" id="spd" min="20" max="100" value="100">
+   </div>
+   <div class="card l"><h3 class="text-xl">Live Math Steps</h3><div class="num text-sm space-y-2 mt-1"><div id="m1"></div><div id="m2"></div></div></div>
+   <div class="card"><h3 class="text-xl">Visibilitas Layer</h3><div id="lyr" class="text-sm"></div></div>
+  </div>
+ </div>
+</section>
+
+<section id="edu" class="tab space-y-4">
+ <div class="card"><h2 class="text-3xl mb-2">Kenapa Chip AI Cepat Panas?</h2>
+ <p>Chip AI (GPU) mengerjakan jutaan hitungan tiap detik. Listrik yang masuk hampir semuanya berubah jadi <b>panas</b>, seperti setrika atau kompor listrik. Satu chip AI modern bisa memakai <b>700 sampai 1000 Watt</b>, kira-kira sebesar 10 lampu rumah, tapi panasnya terkumpul di area sebesar kuku.</p>
+ <p class="mt-2"><b>Analogi mudah:</b> chip itu kompor, pendingin itu air atau kipas yang mengambil panasnya. Makin besar api (Watt), makin kuat pendingin yang kamu butuhkan.</p></div>
+<div class="card c"><h2 class="text-3xl mb-3">Perjalanan Panas: Dari Chip ke Luar</h2>
+ <div class="flex flex-wrap items-stretch gap-2 text-sm">
+  <div class="p-2 rounded-xl border border-cyan-400/40"><b>1. Die</b><br>Silikon tempat hitungan terjadi. Di sinilah panas lahir.</div><div class="self-center">➜</div>
+  <div class="p-2 rounded-xl border border-cyan-400/40"><b>2. TIM</b><br>Pasta tipis yang menambal celah mikroskopis agar panas mudah lewat.</div><div class="self-center">➜</div>
+  <div class="p-2 rounded-xl border border-cyan-400/40"><b>3. IHS</b><br>Tutup logam yang menyebarkan panas ke area lebih luas.</div><div class="self-center">➜</div>
+  <div class="p-2 rounded-xl border border-cyan-400/40"><b>4. Pendingin</b><br>Udara, cairan di cold plate, atau cairan rendam membawa panas pergi.</div></div>
+ <p class="mt-2 text-sm">Buka tab SIMULASI, geser <i>Exploded View</i>, lalu lihat urutan lapisan ini satu per satu.</p></div>
+<div class="card y"><h2 class="text-3xl mb-2">Apa Itu Thermal Throttling?</h2>
+ <p>Saat suhu chip melewati sekitar <b>85°C</b>, chip menurunkan kecepatannya sendiri agar tidak rusak. Akibatnya pelatihan AI jadi lambat walau listrik tetap terpakai. Karena itu pendingin yang baik berarti kinerja yang stabil, bukan hanya chip yang adem.</p></div>
+<div class="card c"><h2 class="text-3xl">Rumus Gampang: 2 Langkah</h2><div id="kx" class="my-3 text-xl"></div></div>
+ <div class="grid md:grid-cols-2 gap-4">
+  <div class="card y"><h3 class="text-2xl">Langkah 1: Cari Panas Tambahan</h3><p>Kalikan beban chip (Watt) dengan Faktor Pendingin (F). Makin kecil F, makin mudah panas dibuang. Contoh: 500 W × 0.15 = 75 °C.</p></div>
+  <div class="card l"><h3 class="text-2xl">Langkah 2: Tambahkan ke Suhu Air</h3><p>Jumlahkan panas tambahan dengan suhu air atau ruang. Contoh: 25 °C + 75 °C = 100 °C, di atas batas 85 °C.</p></div>
+ </div>
+ <div class="grid md:grid-cols-3 gap-4">
+  <div class="card"><h3 class="text-2xl">Udara (F=0.15)</h3><p>Udara menyerap panas dengan buruk, jadi sirip dan kipas harus bekerja keras.</p><p class="num mt-2">500 W → +75 °C → 100 °C (25 °C ruang)</p></div>
+  <div class="card c"><h3 class="text-2xl">Liquid DLC (F=0.05)</h3><p>Air mengalir lewat cold plate langsung di atas chip dan membawa panas jauh lebih cepat.</p><p class="num mt-2">500 W → +25 °C → 50 °C</p></div>
+  <div class="card l"><h3 class="text-2xl">Immersion (F=0.02)</h3><p>Seluruh board terendam cairan dielektrik, sehingga panas dibuang dari semua sisi.</p><p class="num mt-2">500 W → +10 °C → 35 °C</p></div>
+ </div>
+<div class="card"><h2 class="text-3xl mb-2">Kenapa Cairan Lebih Jago dari Udara?</h2>
+ <p>Air menghantar panas sekitar 20 kali lebih baik daripada udara, dan satu liter air bisa menyimpan panas ribuan kali lebih banyak daripada satu liter udara. Jadi dengan aliran yang sama, cairan membawa panas jauh lebih banyak. Itulah sebabnya nilai F cairan lebih kecil.</p></div>
+<div class="grid md:grid-cols-3 gap-4">
+ <div class="card"><h3 class="text-xl">Udara: plus dan minus</h3><p class="text-sm">👍 Murah, sederhana, mudah dirawat.<br>👎 Berisik, boros listrik kipas, kewalahan di atas sekitar 500 W.</p></div>
+ <div class="card c"><h3 class="text-xl">Liquid DLC: plus dan minus</h3><p class="text-sm">👍 Kuat untuk rak server padat, lebih hemat energi.<br>👎 Perlu pipa dan pompa, risiko bocor harus dijaga.</p></div>
+ <div class="card l"><h3 class="text-xl">Immersion: plus dan minus</h3><p class="text-sm">👍 Paling dingin dan paling hemat energi, nyaris tanpa kipas.<br>👎 Biaya awal tinggi, perawatan lebih rumit.</p></div></div>
+<div class="card y"><h2 class="text-3xl mb-2">4 Cara Menurunkan Suhu Chip</h2>
+ <ul class="list-disc pl-5 space-y-1 text-sm"><li><b>Kurangi Watt:</b> kecilkan beban chip atau batasi daya.</li><li><b>Turunkan suhu air/ruang:</b> setiap 1°C lebih dingin menurunkan suhu chip 1°C.</li><li><b>Naikkan kecepatan kipas atau pompa:</b> aliran lebih deras membuat F efektif lebih kecil.</li><li><b>Ganti teknologi:</b> dari Udara ke DLC atau Immersion memberi penurunan terbesar.</li></ul>
+ <button class="btn mt-3" onclick="document.querySelector('#nav [data-t=sim]').click()">Coba di Simulasi</button></div>
+<div class="card c"><h2 class="text-3xl mb-2">Istilah Penting</h2><div class="space-y-2 text-sm">
+ <details><summary class="cursor-pointer font-semibold">TDP (Thermal Design Power)</summary>Perkiraan panas maksimum chip dalam Watt yang harus sanggup dibuang pendingin.</details>
+ <details><summary class="cursor-pointer font-semibold">Cold plate</summary>Blok logam berongga di atas chip. Cairan mengalir di dalamnya dan menyerap panas.</details>
+ <details><summary class="cursor-pointer font-semibold">Cairan dielektrik</summary>Cairan yang tidak menghantar listrik, sehingga aman untuk merendam komponen elektronik.</details>
+ <details><summary class="cursor-pointer font-semibold">PUE (Power Usage Effectiveness)</summary>Perbandingan total listrik fasilitas dengan listrik yang dipakai chip. Makin dekat ke 1.0, makin efisien.</details>
+ <details><summary class="cursor-pointer font-semibold">BGA (Ball Grid Array)</summary>Matriks bola solder di bawah chip yang menyambungkannya ke motherboard.</details>
+ <details><summary class="cursor-pointer font-semibold">HBM (High Bandwidth Memory)</summary>Memori super cepat yang menempel di samping die. Ia ikut panas, jadi ikut didinginkan.</details></div></div>
+</section>
+
+<section id="mis" class="tab">
+ <div class="card y mb-4 flex justify-between items-center"><h2 class="text-3xl">Tantangan Misi</h2><div class="font-marker text-2xl text-street-yellow" id="stars">⭐ 0 / 3 Bintang</div></div>
+ <div class="grid md:grid-cols-3 gap-4" id="mgrid"></div>
+ <p class="text-sm mt-3">Ubah parameter di tab SIMULASI saat misi aktif. Timer berhenti dan mengulang dari 0 bila kondisi terlanggar.</p>
+</section>
+
+<section id="quiz" class="tab"><div class="card c"><h2 class="text-3xl mb-2">Kuis Evaluasi</h2><div id="qz"></div>
+ <button class="btn" id="qChk">Periksa Jawaban</button><button class="btn" id="qRst">Ulangi Kuis</button>
+ <div id="qFb" class="mt-3 font-marker text-xl"></div></div></section>
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+const LAY=[['Socket Motherboard','#555a66'],['Pin Solder BGA','#c0c0c0'],['Substrate PCB','#0a7a3a'],['Kapasitor SMD','#c9a227'],['Silicon Die & HBM','#4a4a6a'],['TIM / Paste','#dddddd'],['IHS Lid Metal','#b0b8c4'],['Modul Pendingin','#3a8fb7']];
+const BY=[0,.25,.5,.65,.8,.95,1.1,1.45];
+const MODES={air:.15,dlc:.05,imm:.02};
+const S={mode:'air',watt:600,amb:25,spd:100,temp:25,ex:0,exT:0,view:'3d',hist:[],labels:true};
+function calc(){const f=MODES[S.mode]*(1.5-.5*S.spd/100),add=S.watt*f;return{f,add,t:S.amb+add}}
+const heat=t=>t<65?'#39ff14':t<85?'#ffe600':'#ff2a2a';
+
+/* ---------- THREE ---------- */
+const view=$('view'),R=new THREE.WebGLRenderer({antialias:true});view.prepend(R.domElement);
+const scene=new THREE.Scene(),cam=new THREE.PerspectiveCamera(45,1,.1,100);cam.position.set(5,4,6);
+const ctl=new THREE.OrbitControls(cam,R.domElement);ctl.target.set(0,.9,0);ctl.autoRotateSpeed=3;
+scene.add(new THREE.AmbientLight(0xffffff,.7));const dl=new THREE.DirectionalLight(0xffffff,.8);dl.position.set(4,8,5);scene.add(dl);
+const mat=c=>new THREE.MeshStandardMaterial({color:c,metalness:.3,roughness:.5});
+const box=(w,h,d,c,x=0,y=0,z=0)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat(c));m.position.set(x,y,z);return m};
+const G=LAY.map(()=>{const g=new THREE.Group();scene.add(g);return g});
+G[0].add(box(4.4,.2,4.4,LAY[0][1]));
+const ib=new THREE.InstancedMesh(new THREE.SphereGeometry(.07,8,6),mat('#c0c0c0'),100),dm=new THREE.Object3D();
+for(let i=0;i<100;i++){dm.position.set((i%10-4.5)*.3,0,(Math.floor(i/10)-4.5)*.3);dm.updateMatrix();ib.setMatrixAt(i,dm.matrix)}G[1].add(ib);
+G[2].add(box(3.4,.12,3.4,LAY[2][1]));
+for(let i=0;i<10;i++)G[3].add(box(.18,.1,.1,LAY[3][1],(i%5-2)*.6,0,i<5?-1.5:1.5));
+const die=box(1.4,.15,1.4,'#39ff14');G[4].add(die);
+[[-1.1,-.5],[-1.1,.5],[1.1,-.5],[1.1,.5]].forEach(p=>G[4].add(box(.5,.15,.8,'#6a6a9a',p[0],0,p[1])));
+G[5].add(box(2.6,.04,2.6,LAY[5][1]));G[6].add(box(3,.14,3,LAY[6][1]));
+G[7].add(box(3,.3,3,LAY[7][1]));for(let i=0;i<7;i++)G[7].add(box(.08,.35,2.8,'#8cc7e6',(i-3)*.4,.3,0));
+/* chip detail */
+const cv=(w,f)=>{const c=document.createElement('canvas');c.width=c.height=w;f(c.getContext('2d'),w);return new THREE.CanvasTexture(c)};
+const plane=(w,h,t,g,x,y,z,col)=>{const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:t,color:col||0xffffff,transparent:true}));m.rotation.x=-Math.PI/2;m.position.set(x,y,z);g.add(m);return m};
+plane(3.4,3.4,cv(512,(x,s)=>{x.fillStyle='#0b6b34';x.fillRect(0,0,s,s);x.strokeStyle='#d4af37';x.lineWidth=2;for(let i=0;i<40;i++){x.beginPath();x.moveTo(20+i*12,0);x.lineTo(20+i*12,60+i%5*10);x.moveTo(20+i*12,s);x.lineTo(20+i*12,s-60-i%5*10);x.stroke()}x.fillStyle='#d4af37';for(let i=0;i<24;i++)for(let j=0;j<24;j++)if(i<2||i>21||j<2||j>21)x.fillRect(30+i*19,30+j*19,6,6)}),G[2],0,.07,0);
+const dieTop=plane(1.4,1.4,cv(256,(x,s)=>{x.fillStyle='#555';x.fillRect(0,0,s,s);x.fillStyle='#fff';for(let i=0;i<4;i++)for(let j=0;j<4;j++)x.fillRect(16+i*58,16+j*58,46,46);x.strokeStyle='#fff';x.lineWidth=4;x.strokeRect(2,2,s-4,s-4)}),G[4],0,.08,0);
+const hbmT=cv(128,(x,s)=>{x.fillStyle='#2b3350';x.fillRect(0,0,s,s);x.fillStyle='#8aa0ff';for(let i=0;i<8;i++)x.fillRect(8,10+i*15,s-16,8)});
+[[-1.1,-.5],[-1.1,.5],[1.1,-.5],[1.1,.5]].forEach(p=>plane(.5,.8,hbmT,G[4],p[0],.08,p[1]));
+G[6].children[0].material.transparent=true;G[6].children[0].material.opacity=.4;
+plane(3,3,cv(512,(x,s)=>{x.strokeStyle='#e2e8f0';x.lineWidth=5;x.strokeRect(24,24,s-48,s-48);x.fillStyle='#e2e8f0';x.beginPath();x.moveTo(24,24);x.lineTo(84,24);x.lineTo(24,84);x.fill();x.textAlign='center';x.font='bold 84px Space Grotesk,sans-serif';x.fillText('AI-X1',s/2,s/2+4);x.font='26px JetBrains Mono,monospace';x.fillText('NEURAL ACCELERATOR',s/2,s/2+48);x.fillText('THERMAL LAB',s/2,s/2+84)}),G[6],0,.08,0);
+G[7].children.forEach(m=>{m.material.transparent=true;m.material.opacity=.3});
+const gh=new THREE.GridHelper(10,20,0x22d3ee,0x1e293b);gh.position.y=-.2;scene.add(gh);
+const hl=new THREE.PointLight(0x39ff14,1.4,7);hl.position.set(0,1.4,0);scene.add(hl);
+/* particles */
+const PN=150,pp=new Float32Array(PN*3),pg=new THREE.BufferGeometry();pg.setAttribute('position',new THREE.BufferAttribute(pp,3));
+const pm=new THREE.PointsMaterial({size:.1,color:0xffe600});scene.add(new THREE.Points(pg,pm));
+const ph=[...Array(PN)].map(()=>Math.random());
+function parts(dt){const sp=.3+S.spd/100,top=G[7].position.y+.5;
+ for(let i=0;i<PN;i++){ph[i]=(ph[i]+dt*sp*.3)%1;const p=ph[i];let x,y,z;
+  if(S.mode=='air'){x=-2.5+p*5;y=top+Math.sin(i)*.3;z=(i%10-4.5)*.3}
+  else if(S.mode=='dlc'){const a=p*6.283,r=1.8+(i%3)*.1;x=Math.cos(a)*r;z=Math.sin(a)*r;y=top-.3+(i%5)*.1}
+  else{x=((i*37)%100/100-.5)*4;z=((i*53)%100/100-.5)*4;y=p*3.2}
+  pp.set([x,y,z],i*3)}
+ pg.attributes.position.needsUpdate=true;pm.color.set(S.mode=='air'?'#ffe600':S.mode=='dlc'?'#00f0ff':'#39ff14')}
+/* labels */
+const SV=$('svg'),LB=LAY.map((l,i)=>{const d=document.createElement('div');d.textContent=l[0];$('lab').appendChild(d);
+ const ln=document.createElementNS('http://www.w3.org/2000/svg','polyline');ln.setAttribute('stroke','#22d3ee');ln.setAttribute('stroke-width','2');ln.setAttribute('fill','none');ln.setAttribute('stroke-linejoin','round');
+ const ci=document.createElementNS('http://www.w3.org/2000/svg','circle');ci.setAttribute('r',5);ci.setAttribute('fill','#ff007f');ci.setAttribute('stroke','#fff');ci.setAttribute('stroke-width','2');SV.append(ln,ci);return{d,ln,ci}});
+function labels(){const w=view.clientWidth,h=view.clientHeight,show=S.labels&&S.ex>.05&&S.view=='3d';
+ const P=LB.map((e,i)=>{const on=show&&G[i].visible;e.d.style.display=e.ln.style.display=e.ci.style.display=on?'block':'none';if(!on)return null;
+  const v=G[i].position.clone().project(cam);return{i,px:(v.x*.5+.5)*w,py:(-v.y*.5+.5)*h}});
+ [0,1].forEach(side=>{const L=P.filter(p=>p&&p.i%2==side).sort((a,b)=>a.py-b.py);let prev=-99;
+  L.forEach(p=>{p.ly=Math.max(p.py,prev+26);prev=p.ly});
+  const over=prev-(h-16);if(over>0)L.forEach(p=>p.ly-=over);
+  L.forEach(p=>{const e=LB[p.i],left=side==0,edge=left?124:w-124,el=left?edge+22:edge-22;
+   e.d.style.left=(left?4:w-124)+'px';e.d.style.top=(p.ly-10)+'px';
+   e.ln.setAttribute('points',edge+','+p.ly+' '+el+','+p.ly+' '+p.px+','+p.py);e.ci.setAttribute('cx',p.px);e.ci.setAttribute('cy',p.py)})})}
+function size(){const w=view.clientWidth,h=view.clientHeight;R.setSize(w,h);cam.aspect=w/h;cam.updateProjectionMatrix()}
+addEventListener('resize',size);
+function bgc(){const l=document.body.classList.contains('light');scene.background=new THREE.Color(l?'#fff7e0':'#0d0b1a');return l?'#fff7e0':'#0d0b1a'}
+
+/* ---------- 2D ---------- */
+function d2(){const c=$('c2d'),x=c.getContext('2d'),w=c.width=view.clientWidth,h=c.height=view.clientHeight;
+ x.fillStyle=bgc();x.fillRect(0,0,w,h);const hs=[26,12,16,14,24,8,16,44],ws=[.85,.7,.6,.62,.42,.4,.55,.55];let y=h-30;
+ LAY.forEach((l,i)=>{y-=hs[i]+4;if(!G[i].visible)return;const lw=ws[i]*w,lx=(w-lw)/2;
+  if(i==4){const g=x.createRadialGradient(w/2,y+12,5,w/2,y+12,lw/1.2);g.addColorStop(0,heat(S.temp));g.addColorStop(1,'#222');x.fillStyle=g}else x.fillStyle=l[1];
+  x.fillRect(lx,y,lw,hs[i]);x.strokeStyle='#000';x.lineWidth=2;x.strokeRect(lx,y,lw,hs[i]);
+  x.fillStyle=document.body.classList.contains('light')?'#000':'#fff';x.font='bold 11px JetBrains Mono';x.fillText(l[0],lx+lw+8,y+hs[i]/2+4)})}
+
+/* ---------- UI ---------- */
+LAY.forEach((l,i)=>{const lb=document.createElement('label');lb.className='block';lb.innerHTML=`<input type="checkbox" checked> ${l[0]}`;
+ lb.firstChild.onchange=e=>G[i].visible=e.target.checked;$('lyr').appendChild(lb)});
+$('nav').onclick=e=>{const t=e.target.dataset.t;if(!t)return;document.querySelectorAll('.tab').forEach(s=>s.classList.toggle('act',s.id==t));
+ [...$('nav').children].forEach(b=>b.classList.toggle('on',b==e.target));if(t=='sim')size()};
+$('theme').onclick=()=>{const l=document.body.classList.toggle('light');document.documentElement.classList.toggle('dark',!l);$('theme').textContent=l?'🌙 Mode Gelap':'☀️ Mode Terang';bgc()};
+$('modes').onclick=e=>{const m=e.target.dataset.m;if(!m)return;S.mode=m;[...$('modes').children].forEach(b=>b.classList.toggle('on',b==e.target))};
+['watt','amb','spd'].forEach(k=>{const f=()=>{S[k]=+$(k).value;$({watt:'wV',amb:'aV',spd:'sV'}[k]).textContent=S[k]};$(k).oninput=f;f()});
+$('ex').oninput=()=>{S.exT=$('ex').value/100;$('exV').textContent=$('ex').value};
+function setView(v){S.view=v;$('c2d').style.display=v=='2d'?'block':'none';R.domElement.style.display=v=='3d'?'block':'none';$('b3d').classList.toggle('on',v=='3d');$('b2d').classList.toggle('on',v=='2d')}
+$('b3d').onclick=()=>setView('3d');$('b2d').onclick=()=>setView('2d');
+$('pOrb').onclick=()=>{ctl.autoRotate=!ctl.autoRotate;$('pOrb').classList.toggle('on',ctl.autoRotate)};
+$('pTop').onclick=()=>{setView('3d');cam.position.set(0,9,.01)};$('pBot').onclick=()=>{setView('3d');cam.position.set(0,-9,.01)};
+$('pExp').onclick=()=>{S.exT=1;$('ex').value=100;$('exV').textContent=100};
+$('zIn').onclick=()=>cam.position.multiplyScalar(.8);$('zOut').onclick=()=>cam.position.multiplyScalar(1.25);
+$('pLab').onclick=()=>{S.labels=!S.labels;$('pLab').textContent='Label '+(S.labels?'ON':'OFF');$('pLab').classList.toggle('on',S.labels)};
+try{katex.render('T_{chip}=T_{air}+\\left(W_{chip}\\times F\\right)',$('kx'),{displayMode:true,output:'mathml',throwOnError:false})}catch(e){$('kx').textContent='Suhu Chip = Suhu Air + (Watt × F)'}
+
+/* ---------- Graph ---------- */
+function graph(){const c=$('gr'),x=c.getContext('2d'),w=c.width,h=c.height,Y=t=>h-t/120*h;x.clearRect(0,0,w,h);
+ x.strokeStyle='#ff2a2a';x.setLineDash([6,4]);x.beginPath();x.moveTo(0,Y(85));x.lineTo(w,Y(85));x.stroke();x.setLineDash([]);
+ x.fillStyle='#ff2a2a';x.font='12px JetBrains Mono';x.fillText('Throttling 85°C',6,Y(85)-4);
+ x.strokeStyle='#00f0ff';x.lineWidth=3;x.beginPath();S.hist.forEach((t,i)=>{const px=i/59*w;i?x.lineTo(px,Y(t)):x.moveTo(px,Y(t))});x.stroke()}
+
+/* ---------- Missions ---------- */
+const MS=[{n:'LLM Training Overclock',d:'Watt 1000W, pakai Liquid/Rendam, suhu < 80°C.',ok:()=>S.watt>=1000&&S.mode!='air'&&S.temp<80},
+{n:'Super Dingin Rendam',d:'Mode Rendam, beban 600W, suhu < 45°C.',ok:()=>S.mode=='imm'&&S.watt>=600&&S.temp<45},
+{n:'Gelombang Panas 35°C',d:'Air 35°C, beban 800W, suhu < 82°C.',ok:()=>S.amb>=35&&S.watt>=800&&S.temp<82}];
+const M={act:-1,p:0,done:new Set()};
+function mRender(){$('mgrid').innerHTML=MS.map((m,i)=>`<div class="card ${['','c','l'][i]}"><h3 class="text-2xl">Misi ${i+1}: ${m.n}</h3><p class="text-sm">${m.d} Bertahan 10 detik.</p>
+ <div class="num my-2" id="mp${i}">${M.done.has(i)?'✅ SELESAI':(M.act==i?M.p.toFixed(1):0)+'s / 10s'}</div>
+ <button class="btn" onclick="mToggle(${i})">${M.act==i?'Batal':'Mulai'}</button></div>`).join('');
+ $('stars').textContent=`⭐ ${M.done.size} / 3 Bintang`}
+window.mToggle=i=>{M.act=M.act==i?-1:i;M.p=0;mRender()};
+function mTick(dt){if(M.act<0)return;if(MS[M.act].ok())M.p+=dt;else M.p=0;
+ if(M.p>=10){M.done.add(M.act);M.act=-1;M.p=0;mRender()}else $('mp'+M.act).textContent=M.p.toFixed(1)+'s / 10s'}
+mRender();
+
+/* ---------- Quiz ---------- */
+const QZ=[['Rumus suhu chip yang benar?',['Suhu Air + (Watt × F)','Watt ÷ F','Suhu Air × Watt','Watt − F'],0],
+['Nilai F untuk Liquid DLC?',['0.15','0.05','0.02','0.5'],1],
+['Pendingin dengan F terkecil (terbaik)?',['Udara','Liquid DLC','Rendam Immersion','Semua sama'],2],
+['Udara, 500 W, ruang 25°C. Suhu chip?',['75°C','100°C','125°C','85°C'],1],
+['Immersion, 500 W, air 30°C. Suhu chip?',['40°C','35°C','60°C','530°C'],0],
+['Apa yang terjadi bila chip melewati 85°C?',['Thermal throttling (performa turun)','Chip makin cepat','Chip menjadi dingin','Listrik hemat'],0]];
+function qRender(){$('qz').innerHTML=QZ.map((q,i)=>`<div class="mb-3"><b>${i+1}. ${q[0]}</b>${q[1].map((o,j)=>`<label class="opt"><input type="radio" name="q${i}" value="${j}"> ${o}</label>`).join('')}</div>`).join('');$('qFb').textContent=''}
+$('qChk').onclick=()=>{let s=0;QZ.forEach((q,i)=>{const r=document.querySelector(`input[name=q${i}]:checked`);const ok=r&&+r.value==q[2];if(ok)s++;
+ document.querySelectorAll(`input[name=q${i}]`).forEach(e=>{const p=e.parentElement;p.style.background=+e.value==q[2]?'#39ff14':(e.checked?'#ff2a2a':'');p.style.color=p.style.background?'#000':''})});
+ $('qFb').textContent=`Skor: ${s}/6 — `+(s==6?'SEMPURNA! Master pendingin chip!':s>=4?'SANGAT BAGUS! Sedikit lagi.':'Perlu evaluasi ulang. Baca tab Rumus dulu.')};
+$('qRst').onclick=qRender;qRender();
+
+/* ---------- Extra ---------- */
+const PUE={air:1.5,dlc:1.2,imm:1.05},NM={air:'Udara',dlc:'Liquid DLC',imm:'Immersion'};
+function extra(t){const col=heat(t);dieTop.material.color.set(col);hl.color.set(col);hl.position.y=G[4].position.y+.4;
+ const perf=t>85?Math.max(50,100-(t-85)*2):100;$('mP').textContent=perf.toFixed(0)+'%';$('mP').style.color=perf<100?'#ff2a2a':'#39ff14';
+ const u=PUE[S.mode];$('mU').textContent=u.toFixed(2);$('mD').textContent=Math.round(S.watt*u)+' W';
+ $('mC').textContent='Rp '+Math.round(S.watt/1000*u*720*1500).toLocaleString('id-ID');
+ $('cmp').innerHTML=Object.keys(MODES).map(m=>{const tt=S.amb+S.watt*MODES[m]*(1.5-.5*S.spd/100);return `<div class="flex items-center gap-2 my-1"><span class="w-24">${NM[m]}</span><div class="flex-1 h-3 rounded bg-slate-700/50"><div style="width:${Math.min(100,tt/120*100)}%;height:100%;border-radius:4px;background:${heat(tt)}"></div></div><span class="w-16 text-right">${tt.toFixed(0)}°C</span></div>`}).join('')}
+document.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{const [w,a,sp]=b.dataset.p.split(',');$('watt').value=w;$('amb').value=a;$('spd').value=sp;['watt','amb','spd'].forEach(k=>$(k).oninput())});
+$('auto').onclick=()=>{const m=['air','dlc','imm'].find(k=>S.amb+S.watt*MODES[k]*(1.5-.5*S.spd/100)<80)||'imm';document.querySelector('#modes [data-m='+m+']').click()};
+$('pTop').onclick=()=>{setView('3d');cam.position.set(0,9,.01);S.exT=.5;$('ex').value=50;$('exV').textContent=50};
+/* ---------- Loop ---------- */
+let last=performance.now(),acc=0;
+function loop(now){requestAnimationFrame(loop);const dt=Math.min(.1,(now-last)/1000);last=now;
+ const c=calc();S.temp+=(c.t-S.temp)*Math.min(1,dt*2);S.ex+=(S.exT-S.ex)*Math.min(1,dt*5);
+ G.forEach((g,i)=>g.position.y=BY[i]+i*S.ex*.6);die.material.color.set(heat(S.temp));
+ const t=S.temp,st=t<65?['OPTIMAL & ADEM','#39ff14']:t<85?['HANGAT','#ffe600']:['OVERHEAT DANGER!','#ff2a2a'];
+ $('mT').textContent=t.toFixed(1)+' °C';$('mT').style.color=st[1];$('mT').classList.toggle('animate-bounce',t>=85);
+ $('mF').textContent=c.f.toFixed(3);$('mA').textContent='+'+c.add.toFixed(1)+' °C';$('mS').textContent=st[0];$('mS').style.color=st[1];
+ $('m1').textContent=`1. Panas Tambahan = ${S.watt} × ${c.f.toFixed(3)} = ${c.add.toFixed(1)} °C`;
+ $('m2').textContent=`2. Suhu Akhir = ${S.amb} + ${c.add.toFixed(1)} = ${c.t.toFixed(1)} °C`;
+ $('ov').style.display=t>85?'flex':'none';
+ acc+=dt;if(acc>=1){acc=0;S.hist.push(t);if(S.hist.length>60)S.hist.shift()}
+ graph();mTick(dt);extra(t);
+ if(S.view=='3d'){ctl.update();parts(dt);R.render(scene,cam);labels()}else d2()}
+bgc();size();requestAnimationFrame(loop);
+</script></body></html>
